@@ -1,56 +1,133 @@
+#Player: data relative to the player
+#Game: player control and map control
+
 import pygame, sys
 
 pygame.init()
-clock = pygame.time.Clock()
 from random import randint
 
 #create the display surface
 screen = pygame.display.set_mode((800, 600))
+pygame.display.set_caption('Snake game')
 
-x_cobra = 400+20
-y_cobra = 300-20
+#player interaction, level, score and game config
+class Game:
+    def __init__(self):
+        self.clock  = pygame.time.Clock()
+        self.score = 0
+        self.weight = 5
+        self.font_config = pygame.font.SysFont('arial', 40, True, True)
+        self.obs_list = []
+    
+    def check_teleport(self, player):
+        if(player.x >= 780 and player.x_dir == 1):
+            player.x = 20
+        if(player.x <= 20 and player.x_dir == -1):
+            player.x = 780
+        if(player.y >= 580 and player.y_dir == 1):
+            player.y = 20
+        if(player.y <= 20 and player.y_dir == -1):
+            player.y = 580
 
-x_maca = randint(20, 760)
-y_maca = randint(20, 560)
-speed = 3
+    def check_collisions(self, visual_snake, visual_apple, apple):
+            if(visual_snake.colliderect(visual_apple)):
+                apple.randomize()
+                self.score += 1
+                player.size += 1
 
-pontos = 0
-fonte = pygame.font.SysFont('arial', 40, True, True)
+            for obstaculo in self.obs_list:
+                if(visual_snake.colliderect(obstaculo)):
+                    game_over()
 
-x_dir = 0
-y_dir = 1
+            if player.body[-player.size * self.weight:].count(player.head) > 1:
+                game_over()
 
-lista_cobra = []
-tamanho_cobra = 5
-viva = True
+    def controls(self, player):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            
+            #discovers if a moving key is being pressed
+            if event.type == pygame.KEYDOWN:
+                if(player.x_dir == 0):
+                    if event.key == pygame.K_a or event.key == pygame.K_LEFT:
+                        player.x_dir = -1
+                        player.y_dir = 0
+                    if event.key == pygame.K_d or event.key == pygame.K_RIGHT:
+                        player.x_dir = 1
+                        player.y_dir = 0
+                if(player.y_dir == 0):
+                    if event.key == pygame.K_w or event.key == pygame.K_UP:
+                        player.x_dir = 0
+                        player.y_dir = -1
+                    if event.key == pygame.K_s or event.key == pygame.K_DOWN:
+                        player.x_dir = 0
+                        player.y_dir = 1
 
-def aumenta_cobra(lista_cobra):
-    for xey in lista_cobra:
-        pygame.draw.rect(screen, (0, 255, 0), (xey[0], xey[1], 20, 20))
+    def generate_level(self):
+        screen.fill((255, 255, 255))
+        message = f'Pontos: {game.score}'
+        text = self.font_config.render(message, True, (0, 0, 0))
+        return text
+
+#Controls the apple behaviour
+class Apple:
+    def __init__(self):
+        self.randomize()
+    
+    def randomize(self):
+        self.x = randint(20, 760)
+        self.y = randint(20, 560)
+
+#Controls the snake behaviour
+class Snake:
+    def __init__(self):
+        self.x = 400+20
+        self.y = 300-20
+        self.speed = 6
+        self.x_dir = 0
+        self.y_dir = 1
+        self.size = 5
+        self.alive = True
+        self.body = []
+        self.head = []
+
+    def walk(self):
+        self.head = []
+        self.head.append(self.x)
+        self.head.append(self.y)
+        self.body.append(self.head)
+
+        self.x += self.x_dir * self.speed
+        self.y += self.y_dir * self.speed
+
+    def draw_snake(self):
+        if(len(self.body) > self.size*game.weight):
+            del self.body[0]
+
+        for xey in self.body:
+            pygame.draw.rect(screen, (0, 255, 0), (xey[0], xey[1], 20, 20))
+
+game = Game()
+player = Snake()
+apple = Apple()
 
 def inicia_jogo():
-    global x_cobra, y_cobra, x_maca, y_maca, speed, pontos, tamanho_cobra, lista_cobra, lista_cabeca, viva
-    x_maca = randint(20, 760)
-    y_maca = randint(20, 560)
+    global game, player, apple
 
-    x_cobra = 400+20
-    y_cobra = 300-20
-    pontos = 0
-    tamanho_cobra = 5
-    lista_cobra = []
-    lista_cabeca = []
-    x_dir = 0
-    y_dir = 1
-    viva = True
+    game = Game()
+    player = Snake()
+    apple = Apple()
+
 
 def game_over():
-    global viva
     fonte_game_over = pygame.font.SysFont('arial', 20, True, True)
     mensagem = 'Game over, aperte espaço para reiniciar'
     texto_game_over = fonte_game_over.render(mensagem, True, (0, 0, 0))
     
-    viva = False
-    while not viva:
+    player.alive = False
+    while not player.alive:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -67,85 +144,19 @@ def game_over():
         pygame.display.update()
 
 while True:
-    clock.tick(60)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-        
-        #descobre se uma tecla está sendo pressionada
+    game.clock.tick(60)
+    game.controls(player)
     
-        if event.type == pygame.KEYDOWN:
-            if(x_dir == 0):
-                if event.key == pygame.K_a or event.key == pygame.K_LEFT:
-                    x_dir = -1
-                    y_dir = 0
-                if event.key == pygame.K_d or event.key == pygame.K_RIGHT:
-                    x_dir = 1
-                    y_dir = 0
-            if(y_dir == 0):
-                if event.key == pygame.K_w or event.key == pygame.K_UP:
-                    x_dir = 0
-                    y_dir = -1
-                if event.key == pygame.K_s or event.key == pygame.K_DOWN:
-                    x_dir = 0
-                    y_dir = 1
-    #preenche a tela com alguma cor
-    #Tem que sempre preencher senão vai ser possível ver a trajetória do objeto.
-    #Ou seja é essencial para gerar sensação de movimento
-    #ou usa um fill ou cria uma Surface
-    screen.fill((255, 255, 255))
-    mensagem = f'Pontos: {pontos}'
-    texto = fonte.render(mensagem, True, (0, 0, 0))
+    #draws the level, fills the screen, put the score.
+    text = game.generate_level()
 
-    #pygame.font.get_fonts() - retorna uma lista todas as fontes disponíveis no sistema.
-
-    cobra = pygame.draw.rect(screen, (0, 255, 0), (x_cobra, y_cobra, 20, 20))
-    maca = pygame.draw.rect(screen, (255, 0, 0), (x_maca, y_maca, 20, 20))
-
-    obs_list = []
-
+    visual_snake = pygame.draw.rect(screen, (0, 255, 0), (player.x, player.y, 20, 20))
+    visual_apple = pygame.draw.rect(screen, (255, 0, 0), (apple.x, apple.y, 20, 20))
     
-    if(cobra.colliderect(maca)):
-        x_maca = randint(20, 760)
-        y_maca = randint(20, 560)
-        pontos += 1
-        tamanho_cobra += 5
+    player.walk()
+    game.check_collisions(visual_snake, visual_apple, apple)
+    player.draw_snake()
+    game.check_teleport(player)
 
-    for obstaculo in obs_list:
-        if(cobra.colliderect(obstaculo)):
-            game_over()
-
-    lista_cabeca = []
-    lista_cabeca.append(x_cobra)
-    lista_cabeca.append(y_cobra)
-    lista_cobra.append(lista_cabeca)
-
-    if lista_cobra[-tamanho_cobra:].count(lista_cabeca) > 1:
-        game_over()
-
-    x_cobra += x_dir * speed
-    y_cobra += y_dir * speed
-
-    if(len(lista_cobra) > tamanho_cobra):
-        del lista_cobra[0]
-
-    aumenta_cobra(lista_cobra)
-
-    if(x_cobra >= 780 and x_dir == 1):
-        x_cobra = 20
-    if(x_cobra <= 20 and x_dir == -1):
-        x_cobra = 780
-    if(y_cobra >= 580 and y_dir == 1):
-        y_cobra = 20
-    if(y_cobra <= 20 and y_dir == -1):
-        y_cobra = 580
-
-    screen.blit(texto, (20, 20))
+    screen.blit(text, (20, 20))
     pygame.display.update()
-
-
-
-#2 problemas
-#Falta de grade
-#Comida pode aparecer embaixo da cobra
